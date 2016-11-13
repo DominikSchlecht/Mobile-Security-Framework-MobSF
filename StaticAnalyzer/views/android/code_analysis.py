@@ -378,90 +378,91 @@ def _get_dangers_per_file(analysis_dict):
 
 def __get_dexguard(analysis_dict, dat):
     """Analyze code and look for dexuard."""
+    if 'import dexguard.util' in dat:
+        if 'DebugDetector.isDebuggable' in dat:
+            analysis_dict['code']['dex_debug'].append(
+                analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
+            )
+
+        if 'DebugDetector.isDebuggerConnected' in dat:
+            analysis_dict['code']['dex_debug_con'].append(
+                analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
+            )
+
+        if 'EmulatorDetector.isRunningInEmulator' in dat:
+            analysis_dict['code']['dex_emulator'].append(
+                analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
+            )
+
+        if 'DebugDetector.isSignedWithDebugKey' in dat:
+            analysis_dict['code']['dex_debug_key'].append(
+                analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
+            )
+
+        if 'RootDetector.isDeviceRooted' in dat:
+            analysis_dict['code']['dex_root'].append(
+                analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
+            )
+
+        if 'TamperDetector.checkApk' in dat:
+            analysis_dict['code']['dex_tamper'].append(
+                analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
+            )
+
+        if 'CertificateChecker.checkCertificate' in dat:
+            analysis_dict['code']['dex_cert'].append(
+                analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
+            )
+
     if (
-            'import dexguard.util' in dat and
-            'DebugDetector.isDebuggable' in dat
+            'dalvik.system.PathClassLoader' in dat or
+            'dalvik.system.DexFile' in dat or
+            'dalvik.system.DexPathList' in dat or
+            'dalvik.system.DexClassLoader' in dat
     ):
-        analysis_dict['code']['dex_debug'].append(
-            analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
-        )
-    if (
-            'import dexguard.util' in dat and
-            'DebugDetector.isDebuggerConnected' in dat
-    ):
-        analysis_dict['code']['dex_debug_con'].append(
-            analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
-        )
-    if (
-            ('import dexguard.util') in dat and
-            ('EmulatorDetector.isRunningInEmulator') in dat
-    ):
-        analysis_dict['code']['dex_emulator'].append(
-            analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
-        )
-    if (
-            ('import dexguard.util') in dat and
-            ('DebugDetector.isSignedWithDebugKey') in dat
-    ):
-        analysis_dict['code']['dex_debug_key'].append(
-            analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
-        )
-    if 'import dexguard.util' in dat and 'RootDetector.isDeviceRooted' in dat:
-        analysis_dict['code']['dex_root'].append(
-            analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
-        )
-    if 'import dexguard.util' in dat and 'TamperDetector.checkApk' in dat:
-        analysis_dict['code']['dex_tamper'].append(
-            analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
-        )
-    if (
-            'import dexguard.util' in dat and
-            'CertificateChecker.checkCertificate' in dat
-    ):
-        analysis_dict['code']['dex_cert'].append(
-            analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
-        )
-    if (
-            (
-                'dalvik.system.PathClassLoader' in dat or
-                'dalvik.system.DexFile' in dat or
-                'dalvik.system.DexPathList' in dat or
-                'dalvik.system.DexClassLoader' in dat
-            ) and (
+        if (
                 'loadDex' in dat or
                 'loadClass' in dat or
                 'DexClassLoader' in dat or
                 'loadDexFile' in dat
+        ):
+            analysis_dict['code']['dex'].append(
+                analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
             )
-    ):
-        analysis_dict['code']['dex'].append(
-            analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
-        )
+
 
     return analysis_dict
 
 
 def __get_root_detection(analysis_dict, dat):
     """Analyze data for signs of rooting."""
-    if (
-            'com.noshufou.android.su' in dat or
-            'com.thirdparty.superuser' in dat or
-            'eu.chainfire.supersu' in dat or
-            'com.koushikdutta.superuser' in dat or
-            'eu.chainfire.' in dat
-    ):
+
+    # Check if the app tries to root
+    root_list = [
+        'com.noshufou.android.su',
+        'com.thirdparty.superuser',
+        'eu.chainfire.supersu',
+        'com.koushikdutta.superuser',
+        'eu.chainfire.'
+    ]
+
+    if any(sub_string in dat for sub_string in root_list):
         analysis_dict['code']['d_root'].append(
             analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
         )
-    if (
-            ('.contains("test-keys")') in dat or
-            ('/system/app/Superuser.apk') in dat or
-            ('isDeviceRooted()') in dat or
-            ('/system/bin/failsafe/su') in dat or
-            ('/system/sd/xbin/su') in dat or
-            ('"/system/xbin/which", "su"') in dat or
-            ('RootTools.isAccessGiven()') in dat
-    ):
+
+    # Check for root-checks
+    check_root_list = [
+        '.contains("test-keys")',
+        '/system/app/Superuser.apk',
+        'isDeviceRooted()',
+        '/system/bin/failsafe/su',
+        '/system/sd/xbin/su',
+        '"/system/xbin/which", "su"',
+        'RootTools.isAccessGiven()'
+    ]
+
+    if any(sub_string in dat for sub_string in check_root_list):
         analysis_dict['code']['d_rootcheck'].append(
             analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
         )
@@ -504,21 +505,21 @@ def __get_crypto(analysis_dict, dat):
             analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
         )
         analysis_dict['obfus'] = True
-    if 'android.util.Base64' in dat and '.decode' in dat:
-        analysis_dict['code']['bdecode'].append(
-            analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
-        )
-    if (
-            (
-                'android.util.Base64' in dat
-            ) and (
+
+    # Check for Base64
+    if 'android.util.Base64' in dat:
+        if '.decode' in dat:
+            analysis_dict['code']['bdecode'].append(
+                analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
+            )
+        if (
                 '.encodeToString' in dat or
                 '.encode' in dat
+        ):
+            analysis_dict['code']['bencode'].append(
+                analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
             )
-    ):
-        analysis_dict['code']['bencode'].append(
-            analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
-        )
+
     if (
             (
                 'java.security.MessageDigest' in dat
@@ -536,21 +537,22 @@ def __get_crypto(analysis_dict, dat):
 
 def __get_ssl(analysis_dict, dat):
     """Analyze data for ssl-config."""
-    if (
-            (
-                ('javax.net.ssl') in dat
-            ) and (
-                ('TrustAllSSLSocket-Factory') in dat or
-                ('AllTrustSSLSocketFactory') in dat or
-                ('NonValidatingSSLSocketFactory') in dat or
-                ('ALLOW_ALL_HOSTNAME_VERIFIER') in dat or
-                ('.setDefaultHostnameVerifier(') in dat or
-                ('NullHostnameVerifier(') in dat
+
+    # Check for ssl trust-model-disablers
+    if 'javax.net.ssl' in dat:
+        ssl_list_of_shame = [
+            'TrustAllSSLSocket-Factory',
+            'AllTrustSSLSocketFactory',
+            'NonValidatingSSLSocketFactory',
+            'ALLOW_ALL_HOSTNAME_VERIFIER',
+            '.setDefaultHostnameVerifier(',
+            'NullHostnameVerifier('
+        ]
+
+        if any(sub_string in dat for sub_string in ssl_list_of_shame):
+            analysis_dict['code']['d_ssl'].append(
+                analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
             )
-    ):
-        analysis_dict['code']['d_ssl'].append(
-            analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
-        )
     if (
             'password = "' in dat.lower() or
             'secret = "' in dat.lower() or
@@ -671,38 +673,48 @@ def __get_manager(analysis_dict, dat):
         analysis_dict['code']['notify'].append(
             analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
         )
-    if 'telephony.TelephonyManager' in dat and 'getAllCellInfo' in dat:
-        analysis_dict['code']['cellinfo'].append(
-            analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
-        )
-    if 'telephony.TelephonyManager' in dat and 'getCellLocation' in dat:
-        analysis_dict['code']['cellloc'].append(
-            analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
-        )
-    if 'telephony.TelephonyManager' in dat and 'getSubscriberId' in dat:
-        analysis_dict['code']['subid'].append(
-            analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
-        )
-    if 'telephony.TelephonyManager' in dat and 'getDeviceId' in dat:
-        analysis_dict['code']['devid'].append(
-            analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
-        )
-    if 'telephony.TelephonyManager' in dat and 'getDeviceSoftwareVersion' in dat:
-        analysis_dict['code']['softver'].append(
-            analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
-        )
-    if 'telephony.TelephonyManager' in dat and 'getSimSerialNumber' in dat:
-        analysis_dict['code']['simserial'].append(
-            analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
-        )
-    if 'telephony.TelephonyManager' in dat and 'getSimOperator' in dat:
-        analysis_dict['code']['simop'].append(
-            analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
-        )
-    if 'telephony.TelephonyManager' in dat and 'getSimOperatorName' in dat:
-        analysis_dict['code']['opname'].append(
-            analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
-        )
+
+    if 'telephony.TelephonyManager' in dat:
+        if 'getAllCellInfo' in dat:
+            analysis_dict['code']['cellinfo'].append(
+                analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
+            )
+
+        if 'getCellLocation' in dat:
+            analysis_dict['code']['cellloc'].append(
+                analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
+            )
+
+        if 'getSubscriberId' in dat:
+            analysis_dict['code']['subid'].append(
+                analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
+            )
+
+        if 'getDeviceId' in dat:
+            analysis_dict['code']['devid'].append(
+                analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
+            )
+
+        if 'getDeviceSoftwareVersion' in dat:
+            analysis_dict['code']['softver'].append(
+                analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
+            )
+
+        if 'getSimSerialNumber' in dat:
+            analysis_dict['code']['simserial'].append(
+                analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
+            )
+
+        if 'getSimOperator' in dat:
+            analysis_dict['code']['simop'].append(
+                analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
+            )
+
+        if 'getSimOperatorName' in dat:
+            analysis_dict['code']['opname'].append(
+                analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
+            )
+
     return analysis_dict
 
 
@@ -819,29 +831,25 @@ def __get_webview(analysis_dict, dat):
         analysis_dict['code']['d_webviewdisablessl'].append(
             analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
         )
-    if (
-            'addJavascriptInterface' in dat and
-            'WebView' in dat and
-            'android.webkit' in dat
-    ):
-        analysis_dict['code']['webview_addjs'].append(
-            analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
-        )
-    if 'WebView' in dat and 'loadData' in dat and 'android.webkit' in dat:
-        analysis_dict['code']['webviewget'].append(
-            analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
-        )
-    if 'WebView' in dat and 'postUrl' in dat and 'android.webkit' in dat:
-        analysis_dict['code']['webviewpost'].append(
-            analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
-        )
-    if (
-            '.setWebContentsDebuggingEnabled(true)' in dat and
-            'WebView' in dat
-    ):
-        analysis_dict['code']['d_webviewdebug'].append(
-            analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
-        )
+
+    if 'WebView' in dat:
+        if 'android.webkit' in dat:
+            if 'loadData' in dat:
+                analysis_dict['code']['webviewget'].append(
+                    analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
+                )
+            if 'postUrl' in dat:
+                analysis_dict['code']['webviewpost'].append(
+                    analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
+                )
+            if 'addJavascriptInterface' in dat:
+                analysis_dict['code']['webview_addjs'].append(
+                    analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
+                )
+        if '.setWebContentsDebuggingEnabled(true)' in dat:
+            analysis_dict['code']['d_webviewdebug'].append(
+                analysis_dict['jfile_path'].replace(analysis_dict['java_src'], '')
+            )
 
     return analysis_dict
 
@@ -850,6 +858,7 @@ def __get_dynamic(analysis_dict, dat):
     """Analyze data for dynmaic class loading."""
     if re.findall(r"System.loadLibrary\(|System.load\(", dat):
         analysis_dict['native'] = True
+
     if (
             re.findall(
                 (
