@@ -18,6 +18,56 @@ from MobSF.utils import (
     isDirExists
 )
 
+def __dex_2_jar(app_dir, tools_dir):
+    print "[INFO] Using JAR converter - dex2jar"
+    if platform.system() == "Windows":
+        win_fix_java(tools_dir)
+        d2j = os.path.join(tools_dir, 'd2j2/d2j-dex2jar.bat')
+    else:
+        inv = os.path.join(tools_dir, 'd2j2/d2j_invoke.sh')
+        d2j = os.path.join(tools_dir, 'd2j2/d2j-dex2jar.sh')
+        subprocess.call(["chmod", "777", d2j])
+        subprocess.call(["chmod", "777", inv])
+    if len(settings.DEX2JAR_BINARY) > 0 and isFileExists(settings.DEX2JAR_BINARY):
+        d2j = settings.DEX2JAR_BINARY
+    args = [
+        d2j,
+        app_dir + 'classes.dex',
+        '-f',
+        '-o',
+        app_dir + 'classes.jar'
+    ]
+    return args
+
+
+def __dex_2_jar_enjarify(app_path, app_dir, tools_dir):
+    print "[INFO] Using JAR converter - Google enjarify"
+    if len(settings.ENJARIFY_DIRECTORY) > 0 and isDirExists(settings.ENJARIFY_DIRECTORY):
+        working_dir = settings.ENJARIFY_DIRECTORY
+    else:
+        working_dir = os.path.join(tools_dir, 'enjarify/')  # TODO(Need to understand this)
+    if platform.system() == "Windows":
+        win_fix_python3(tools_dir)
+        enjarify = os.path.join(working_dir, 'enjarify.bat')
+        args = [enjarify, app_path, "-f", "-o", app_dir + 'classes.jar']
+    else:
+        working_dir = True
+        if len(settings.PYTHON3_PATH) > 2:
+            python3 = os.path.join(settings.PYTHON3_PATH, "python3")
+        else:
+            python3 = "python3"
+        args = [
+            python3,
+            "-O",
+            "-m",
+            "enjarify.main",
+            app_path,
+            "-f",
+            "-o",
+            app_dir +'classes.jar'
+        ]
+    return working_dir, args
+
 def dex_2_jar(app_path, app_dir, tools_dir):
     """Run dex2jar."""
     try:
@@ -25,50 +75,9 @@ def dex_2_jar(app_path, app_dir, tools_dir):
         args = []
         working_dir = False
         if settings.JAR_CONVERTER == "d2j":
-            print "[INFO] Using JAR converter - dex2jar"
-            if platform.system() == "Windows":
-                win_fix_java(tools_dir)
-                d2j = os.path.join(tools_dir, 'd2j2/d2j-dex2jar.bat')
-            else:
-                inv = os.path.join(tools_dir, 'd2j2/d2j_invoke.sh')
-                d2j = os.path.join(tools_dir, 'd2j2/d2j-dex2jar.sh')
-                subprocess.call(["chmod", "777", d2j])
-                subprocess.call(["chmod", "777", inv])
-            if len(settings.DEX2JAR_BINARY) > 0 and isFileExists(settings.DEX2JAR_BINARY):
-                d2j = settings.DEX2JAR_BINARY
-            args = [
-                d2j,
-                app_dir + 'classes.dex',
-                '-f',
-                '-o',
-                app_dir + 'classes.jar'
-            ]
+            args = __dex_2_jar(app_dir, tools_dir)
         elif settings.JAR_CONVERTER == "enjarify":
-            print "[INFO] Using JAR converter - Google enjarify"
-            if len(settings.ENJARIFY_DIRECTORY) > 0 and isDirExists(settings.ENJARIFY_DIRECTORY):
-                working_dir = settings.ENJARIFY_DIRECTORY
-            else:
-                working_dir = os.path.join(tools_dir, 'enjarify/')  # TODO(Need to understand this)
-            if platform.system() == "Windows":
-                win_fix_python3(tools_dir)
-                enjarify = os.path.join(working_dir, 'enjarify.bat')
-                args = [enjarify, app_path, "-f", "-o", app_dir + 'classes.jar']
-            else:
-                working_dir = True
-                if len(settings.PYTHON3_PATH) > 2:
-                    python3 = os.path.join(settings.PYTHON3_PATH, "python3")
-                else:
-                    python3 = "python3"
-                args = [
-                    python3,
-                    "-O",
-                    "-m",
-                    "enjarify.main",
-                    app_path,
-                    "-f",
-                    "-o",
-                    app_dir +'classes.jar'
-                ]
+            args, working_dir = __dex_2_jar_enjarify(app_path, app_dir, tools_dir)
         if working_dir:
             subprocess.call(args, cwd=working_dir)
         else:
