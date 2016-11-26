@@ -71,28 +71,31 @@ def manifest_data(mfxml):
     """Extract manifest data."""
     try:
         print "[INFO] Extracting Manifest Data"
-        svc = []
-        act = []
-        brd = []
-        cnp = []
-        lib = []
-        perm = []
-        dvm_perm = {}
-        package = ''
-        minsdk = ''
-        maxsdk = ''
-        targetsdk = ''
-        mainact = ''
-        androidversioncode = ''
-        androidversionname = ''
-        permissions = mfxml.getElementsByTagName("uses-permission")
-        manifest = mfxml.getElementsByTagName("manifest")
-        activities = mfxml.getElementsByTagName("activity")
-        services = mfxml.getElementsByTagName("service")
-        providers = mfxml.getElementsByTagName("provider")
-        receivers = mfxml.getElementsByTagName("receiver")
-        libs = mfxml.getElementsByTagName("uses-library")
-        sdk = mfxml.getElementsByTagName("uses-sdk")
+        xml_anal_dic = {
+            'svc' : [],
+            'act' : [],
+            'brd' : [],
+            'cnp' : [],
+            'lib' : [],
+            'perm' : [],
+            'dvm_perm' : {},
+            'package' : '',
+            'minsdk' : '',
+            'maxsdk' : '',
+            'targetsdk' : '',
+            'mainact' : '',
+            'androidversioncode' : '',
+            'androidversionname' : '',
+            'permissions' : mfxml.getElementsByTagName("uses-permission"),
+            'manifest' : mfxml.getElementsByTagName("manifest"),
+            'activities' : mfxml.getElementsByTagName("activity"),
+            'services' : mfxml.getElementsByTagName("service"),
+            'providers' : mfxml.getElementsByTagName("provider"),
+            'receivers' : mfxml.getElementsByTagName("receiver"),
+            'libs' : mfxml.getElementsByTagName("uses-library"),
+            'sdk' : mfxml.getElementsByTagName("uses-sdk")
+        }
+
         for node in sdk:
             minsdk = node.getAttribute("android:minSdkVersion")
             maxsdk = node.getAttribute("android:maxSdkVersion")
